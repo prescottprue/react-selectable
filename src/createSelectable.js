@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom';
 
 const createSelectable = (WrappedComponent) => {
 	class SelectableItem extends React.Component {
-
 		componentDidMount () {
 			this.context.selectable.register(this.props.selectableKey, ReactDOM.findDOMNode(this));
 		}
@@ -15,6 +14,7 @@ const createSelectable = (WrappedComponent) => {
 
 
 		render () {
+			console.log('constructor!!')
 			return React.createElement(
 				WrappedComponent,
 				this.props,

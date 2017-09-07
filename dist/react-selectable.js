@@ -147,6 +147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			};
 
 			_this._mouseDownData = null;
+			_this._rect = null;
 			_this._registry = [];
 
 			_this._openSelector = _this._openSelector.bind(_this);
@@ -173,7 +174,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		}, {
 			key: 'componentDidMount',
 			value: function componentDidMount() {
-				this._applyMousedown(this.props.enabled);
+				document.addEventListener('mousedown', this._mouseDown);
 			}
 
 			/**
@@ -183,7 +184,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		}, {
 			key: 'componentWillUnmount',
 			value: function componentWillUnmount() {
-				this._applyMousedown(false);
+				document.removeEventListener('mousedown', this._mouseDown);
 			}
 		}, {
 			key: 'componentWillReceiveProps',
@@ -219,18 +220,31 @@ return /******/ (function(modules) { // webpackBootstrap
 		}, {
 			key: '_openSelector',
 			value: function _openSelector(e) {
-				var w = Math.abs(this._mouseDownData.initialW - e.pageX);
-				var h = Math.abs(this._mouseDownData.initialH - e.pageY);
+				var w = Math.abs(this._mouseDownData.initialW - e.pageX + this._rect.x);
+				var h = Math.abs(this._mouseDownData.initialH - e.pageY + this._rect.y);
 
 				this.setState({
 					isBoxSelecting: true,
 					boxWidth: w,
 					boxHeight: h,
-					boxLeft: Math.min(e.pageX, this._mouseDownData.initialW),
-					boxTop: Math.min(e.pageY, this._mouseDownData.initialH)
+					boxLeft: Math.min(e.pageX - this._rect.x, this._mouseDownData.initialW),
+					boxTop: Math.min(e.pageY - this._rect.y, this._mouseDownData.initialH)
 				});
 
 				if (this.props.selectOnMouseMove) this._throttledSelect(e);
+			}
+		}, {
+			key: '_getInitialCoordinates',
+			value: function _getInitialCoordinates() {
+				var style = window.getComputedStyle(document.body);
+				var t = style.getPropertyValue('margin-top');
+				var l = style.getPropertyValue('margin-left');
+				var mLeft = parseInt(l.slice(0, l.length - 2), 10);
+				var mTop = parseInt(t.slice(0, t.length - 2), 10);
+
+				var bodyRect = document.body.getBoundingClientRect();
+				var elemRect = _reactDom2.default.findDOMNode(this).getBoundingClientRect();
+				return { x: Math.round(elemRect.left - bodyRect.left + mLeft), y: Math.round(elemRect.top - bodyRect.top + mTop) };
 			}
 
 			/**
@@ -271,16 +285,17 @@ return /******/ (function(modules) { // webpackBootstrap
 					if (!collides) return;
 				}
 
+				this._rect = this._getInitialCoordinates();
 				this._mouseDownData = {
-					boxLeft: e.pageX,
-					boxTop: e.pageY,
+					boxLeft: e.pageX - this._rect.y,
+					boxTop: e.pageY - this._rect.x,
 					initialW: e.pageX,
 					initialH: e.pageY
 				};
 
 				if (this.props.preventDefault) e.preventDefault();
 
-				window.addEventListener('mousemove', this._openSelector);
+				document.addEventListener('mousemove', this._openSelector);
 			}
 
 			/**
@@ -290,6 +305,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		}, {
 			key: '_mouseUp',
 			value: function _mouseUp(e) {
+				e.stopPropagation();
 				window.removeEventListener('mousemove', this._openSelector);
 				window.removeEventListener('mouseup', this._mouseUp);
 
@@ -347,6 +363,10 @@ return /******/ (function(modules) { // webpackBootstrap
 			key: 'render',
 			value: function render() {
 				var Component = this.props.component;
+				var wrapperStyle = {
+					position: 'relative',
+					overflow: 'visible'
+				};
 
 				if (!this.props.enabled) {
 					return _react2.default.createElement(
@@ -376,7 +396,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				return _react2.default.createElement(
 					Component,
-					{ className: this.props.className },
+					{ className: this.props.className, style: wrapperStyle },
 					this.state.isBoxSelecting && _react2.default.createElement(
 						'div',
 						{ style: boxStyle, ref: 'selectbox' },
@@ -432,7 +452,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 		/**
 	  * Triggered when the user clicks in the component, but not on an item, e.g. whitespace
-	  * 
+	  *
 	  * @type {Function}
 	  */
 		onNonItemClick: _react2.default.PropTypes.func,
@@ -1111,6 +1131,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			}, {
 				key: 'render',
 				value: function render() {
+					console.log('constructor!!');
 					return _react2.default.createElement(WrappedComponent, this.props, this.props.children);
 				}
 			}]);
